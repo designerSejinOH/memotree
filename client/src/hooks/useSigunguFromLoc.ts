@@ -71,6 +71,31 @@ function extractSigCd(fc: GeoJSON.FeatureCollection): string | null {
   return typeof sigCd === 'string' && sigCd.length > 0 ? sigCd : null
 }
 
+// GeoJSON Polygon을 Google Maps LatLng 배열로 변환
+function extractPolygonCoords(fc: GeoJSON.FeatureCollection): google.maps.LatLng[] | null {
+  const f0 = fc.features?.[0]
+  if (!f0 || !f0.geometry) return null
+
+  // Polygon 또는 MultiPolygon 처리
+  if (f0.geometry.type === 'Polygon') {
+    const coords = (f0.geometry as GeoJSON.Polygon).coordinates[0] // 외부 링만 사용
+    return coords.map(([lng, lat]) => new google.maps.LatLng(lat, lng))
+  } else if (f0.geometry.type === 'MultiPolygon') {
+    // MultiPolygon인 경우 첫 번째 Polygon만 사용
+    const coords = (f0.geometry as GeoJSON.MultiPolygon).coordinates[0][0]
+    return coords.map(([lng, lat]) => new google.maps.LatLng(lat, lng))
+  }
+
+  return null
+}
+
+// 점이 Polygon 내부에 있는지 체크
+function isPointInPolygon(lat: number, lng: number, polygon: google.maps.LatLng[]): boolean {
+  if (!google?.maps?.geometry?.poly) return false
+  const point = new google.maps.LatLng(lat, lng)
+  return google.maps.geometry.poly.containsLocation(point, new google.maps.Polygon({ paths: polygon }))
+}
+
 export function useSigunguFromLoc(loc: Loc | null) {
   const [state, setState] = useState<State>({ status: 'idle' })
 
@@ -86,6 +111,9 @@ export function useSigunguFromLoc(loc: Loc | null) {
   const lastSigCdRef = useRef<string | null>(null)
   const lastKeyRef = useRef<string | null>(null)
 
+  // 🎯 현재 시군구의 Polygon 경계를 저장 (경계 내부에 있으면 API 요청 스킵)
+  const currentPolygonRef = useRef<google.maps.LatLng[] | null>(null)
+
   // 🔧 모바일 캐시 문제 해결: loc이 null에서 non-null로 변경되거나, 컴포넌트 마운트 시 ref 초기화
   const prevLocRef = useRef<Loc | null>(null)
   useEffect(() => {
@@ -93,6 +121,7 @@ export function useSigunguFromLoc(loc: Loc | null) {
     if (!prevLocRef.current && loc) {
       lastSigCdRef.current = null
       lastKeyRef.current = null
+      currentPolygonRef.current = null
     }
     prevLocRef.current = loc
   }, [loc])
@@ -108,6 +137,16 @@ export function useSigunguFromLoc(loc: Loc | null) {
     const key = `${snapped.lat},${snapped.lng}`
     // 스냅 결과가 같으면 아예 재실행 안 하도록 가드
     if (lastKeyRef.current === key) return
+
+    // 🎯 현재 시군구 경계 내부에 있는지 체크 (있으면 API 요청 스킵)
+    if (currentPolygonRef.current) {
+      const isInside = isPointInPolygon(snapped.lat, snapped.lng, currentPolygonRef.current)
+      if (isInside) {
+        // 경계 내부에 있으므로 API 요청 하지 않음
+        return
+      }
+    }
+
     lastKeyRef.current = key
 
     let cancelled = false
@@ -143,6 +182,9 @@ export function useSigunguFromLoc(loc: Loc | null) {
           return
         }
 
+        // 🎯 시군구 경계(Polygon) 추출
+        const polygon = extractPolygonCoords(fc)
+
         // ✅ (스킵) 같은 시군구면 업데이트/리렌더 최소화
         if (lastSigCdRef.current === sigCd) {
           if (!cancelled) {
@@ -166,6 +208,7 @@ export function useSigunguFromLoc(loc: Loc | null) {
           return
         }
         lastSigCdRef.current = sigCd
+        currentPolygonRef.current = polygon // 🎯 경계 저장
 
         if (!cancelled) {
           setState({
