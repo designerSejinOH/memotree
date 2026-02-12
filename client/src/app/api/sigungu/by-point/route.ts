@@ -13,6 +13,11 @@ export async function GET(request: Request) {
   const domain = process.env.VWORLD_DOMAIN
   if (!key) return NextResponse.json({ error: 'Missing VWORLD_KEY' }, { status: 500 })
 
+  // VWorld API는 도메인 검증을 수행하므로 domain 파라미터가 필요할 수 있음
+  if (!domain) {
+    console.warn('[VWorld API] VWORLD_DOMAIN is not set. This may cause authentication failures.')
+  }
+
   const upstream = new URL('https://api.vworld.kr/req/data')
   upstream.searchParams.set('service', 'data')
   upstream.searchParams.set('request', 'GetFeature')
@@ -31,8 +36,29 @@ export async function GET(request: Request) {
   const res = await fetch(upstream.toString())
   const raw = await res.json().catch(() => null)
 
+  // 디버깅: VWorld API 응답 로깅
+  console.log('[VWorld API] Status:', res.status)
+  console.log('[VWorld API] Response:', JSON.stringify(raw, null, 2))
+
   if (!res.ok || !raw) {
-    return NextResponse.json({ error: 'Upstream error', status: res.status, raw }, { status: 502 })
+    console.error('[VWorld API] Error - Status:', res.status, 'Raw:', raw)
+    return NextResponse.json({
+      error: 'Upstream error',
+      status: res.status,
+      raw,
+      url: upstream.toString()
+    }, { status: 502 })
+  }
+
+  // VWorld API 에러 응답 체크
+  if (raw?.response?.status === 'ERROR' || raw?.response?.error) {
+    console.error('[VWorld API] API returned error:', raw.response)
+    return NextResponse.json({
+      error: 'VWorld API error',
+      message: raw.response?.error?.text || raw.response?.error || 'Unknown error',
+      code: raw.response?.error?.code,
+      raw
+    }, { status: 502 })
   }
 
   // ✅ 여기: featureCollection만 추출
@@ -44,6 +70,7 @@ export async function GET(request: Request) {
     null
 
   if (!fc || !(fc.type === 'FeatureCollection' && Array.isArray(fc.features))) {
+    console.error('[VWorld API] FeatureCollection not found. Raw shape:', Object.keys(raw ?? {}))
     return NextResponse.json(
       { error: 'FeatureCollection not found', rawShape: Object.keys(raw ?? {}), raw },
       { status: 502 },
