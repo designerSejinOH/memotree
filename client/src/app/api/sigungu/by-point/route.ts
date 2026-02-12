@@ -50,8 +50,48 @@ export async function GET(request: Request) {
   upstream.searchParams.set('crs', 'EPSG:4326') // 안전빵
   if (domain) upstream.searchParams.set('domain', domain)
 
-  const res = await fetch(upstream.toString())
-  const raw = await res.json().catch(() => null)
+  console.log('[VWorld API] Request URL:', upstream.toString())
+
+  // AbortController로 타임아웃 설정 (15초)
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+  let res: Response
+  try {
+    res = await fetch(upstream.toString(), {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; MemoTree/1.0)',
+        'Accept': 'application/json',
+      },
+    })
+  } catch (err: any) {
+    clearTimeout(timeoutId)
+    console.error('[VWorld API] Fetch error:', err.message, err.name)
+    return NextResponse.json({
+      error: 'VWorld API fetch failed',
+      message: err.message,
+      name: err.name,
+      isTimeout: err.name === 'AbortError',
+    }, { status: 502 })
+  }
+  clearTimeout(timeoutId)
+
+  const rawText = await res.text()
+  console.log('[VWorld API] Response status:', res.status)
+  console.log('[VWorld API] Response headers:', Object.fromEntries(res.headers.entries()))
+  console.log('[VWorld API] Response body (first 500 chars):', rawText.substring(0, 500))
+
+  let raw: any = null
+  try {
+    raw = JSON.parse(rawText)
+  } catch (err) {
+    console.error('[VWorld API] JSON parse error:', err)
+    return NextResponse.json({
+      error: 'VWorld API returned invalid JSON',
+      rawText: rawText.substring(0, 1000),
+    }, { status: 502 })
+  }
 
   // 디버깅: VWorld API 응답 로깅
   console.log('[VWorld API] Status:', res.status)
