@@ -11,7 +11,24 @@ export async function GET(request: Request) {
 
   const key = process.env.VWORLD_KEY
   const domain = process.env.VWORLD_DOMAIN
-  if (!key) return NextResponse.json({ error: 'Missing VWORLD_KEY' }, { status: 500 })
+
+  // 디버깅: 환경변수 확인 (보안을 위해 일부만 표시)
+  console.log('[ENV] VWORLD_KEY exists:', !!key)
+  console.log('[ENV] VWORLD_KEY length:', key?.length || 0)
+  console.log('[ENV] VWORLD_KEY preview:', key ? `${key.substring(0, 10)}...` : 'undefined')
+  console.log('[ENV] VWORLD_DOMAIN:', domain || 'undefined')
+  console.log('[ENV] All env keys:', Object.keys(process.env).filter(k => k.includes('VWORLD')))
+
+  if (!key) {
+    console.error('[ENV] VWORLD_KEY is missing!')
+    return NextResponse.json({
+      error: 'Missing VWORLD_KEY',
+      debug: {
+        hasKey: !!key,
+        availableEnvKeys: Object.keys(process.env).filter(k => k.includes('VWORLD'))
+      }
+    }, { status: 500 })
+  }
 
   // VWorld API는 도메인 검증을 수행하므로 domain 파라미터가 필요할 수 있음
   if (!domain) {
