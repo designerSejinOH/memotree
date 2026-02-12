@@ -5,11 +5,13 @@ import { CircleF, MarkerF, useGoogleMap } from '@react-google-maps/api'
 import { useGeolocation } from '@/hooks/useGeolocation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSigunguFromLoc } from '@/hooks/useSigunguFromLoc'
+import { useGoogleMaps } from '@/app/providers/GoogleMapsProvider'
 
 type Tracking = false | 'observe' | 'follow'
 
 export default function LiveLocationLayer() {
   const map = useGoogleMap()
+  const { isLoaded } = useGoogleMaps()
   const { permission, loc, error, startWatch, stopWatch } = useGeolocation()
   const [tracking, setTracking] = useState<Tracking>('follow')
   const panLock = useRef(false)
@@ -22,11 +24,12 @@ export default function LiveLocationLayer() {
     return () => google.maps.event.clearListeners(map, 'dragstart')
   }, [map])
 
-  // 권한/워치 시작
+  // 권한/워치 시작 (Google Maps 로딩 완료 후에만)
   useEffect(() => {
+    if (!isLoaded) return
     startWatch()
     return () => stopWatch()
-  }, [startWatch, stopWatch])
+  }, [isLoaded, startWatch, stopWatch])
 
   // follow일 때 카메라가 사용자 따라감
   useEffect(() => {

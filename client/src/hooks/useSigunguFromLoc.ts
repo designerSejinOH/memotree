@@ -86,6 +86,17 @@ export function useSigunguFromLoc(loc: Loc | null) {
   const lastSigCdRef = useRef<string | null>(null)
   const lastKeyRef = useRef<string | null>(null)
 
+  // 🔧 모바일 캐시 문제 해결: loc이 null에서 non-null로 변경되거나, 컴포넌트 마운트 시 ref 초기화
+  const prevLocRef = useRef<Loc | null>(null)
+  useEffect(() => {
+    // loc이 null에서 non-null로 변경되면 캐시 초기화
+    if (!prevLocRef.current && loc) {
+      lastSigCdRef.current = null
+      lastKeyRef.current = null
+    }
+    prevLocRef.current = loc
+  }, [loc])
+
   useEffect(() => {
     if (!snapped) return
 
