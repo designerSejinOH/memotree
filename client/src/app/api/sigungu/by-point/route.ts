@@ -17,17 +17,23 @@ export async function GET(request: Request) {
   console.log('[ENV] VWORLD_KEY length:', key?.length || 0)
   console.log('[ENV] VWORLD_KEY preview:', key ? `${key.substring(0, 10)}...` : 'undefined')
   console.log('[ENV] VWORLD_DOMAIN:', domain || 'undefined')
-  console.log('[ENV] All env keys:', Object.keys(process.env).filter(k => k.includes('VWORLD')))
+  console.log(
+    '[ENV] All env keys:',
+    Object.keys(process.env).filter((k) => k.includes('VWORLD')),
+  )
 
   if (!key) {
     console.error('[ENV] VWORLD_KEY is missing!')
-    return NextResponse.json({
-      error: 'Missing VWORLD_KEY',
-      debug: {
-        hasKey: !!key,
-        availableEnvKeys: Object.keys(process.env).filter(k => k.includes('VWORLD'))
-      }
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Missing VWORLD_KEY',
+        debug: {
+          hasKey: !!key,
+          availableEnvKeys: Object.keys(process.env).filter((k) => k.includes('VWORLD')),
+        },
+      },
+      { status: 500 },
+    )
   }
 
   // VWorld API는 도메인 검증을 수행하므로 domain 파라미터가 필요할 수 있음
@@ -59,23 +65,29 @@ export async function GET(request: Request) {
 
   if (!res.ok || !raw) {
     console.error('[VWorld API] Error - Status:', res.status, 'Raw:', raw)
-    return NextResponse.json({
-      error: 'Upstream error',
-      status: res.status,
-      raw,
-      url: upstream.toString()
-    }, { status: 502 })
+    return NextResponse.json(
+      {
+        error: 'Upstream error',
+        status: res.status,
+        raw,
+        url: upstream.toString(),
+      },
+      { status: 502 },
+    )
   }
 
   // VWorld API 에러 응답 체크
   if (raw?.response?.status === 'ERROR' || raw?.response?.error) {
     console.error('[VWorld API] API returned error:', raw.response)
-    return NextResponse.json({
-      error: 'VWorld API error',
-      message: raw.response?.error?.text || raw.response?.error || 'Unknown error',
-      code: raw.response?.error?.code,
-      raw
-    }, { status: 502 })
+    return NextResponse.json(
+      {
+        error: 'VWorld API error',
+        message: raw.response?.error?.text || raw.response?.error || 'Unknown error',
+        code: raw.response?.error?.code,
+        raw,
+      },
+      { status: 502 },
+    )
   }
 
   // ✅ 여기: featureCollection만 추출
