@@ -3,12 +3,31 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Loc } from '@/hooks/useGeolocation'
 import { fetchSigunguByPoint } from '@/lib/api/sigungu'
+import toast from 'react-hot-toast'
 
 type State =
-  | { status: 'idle' }
-  | { status: 'loading' }
-  | { status: 'success'; sigCd: string; geojson: GeoJSON.FeatureCollection }
-  | { status: 'error'; error: string }
+  | {
+      status: 'idle'
+      geojson?: GeoJSON.FeatureCollection
+      address?: { sig_cd?: number; sig_eng_nm?: string; full_nm?: string; sig_kor_nm?: string }
+    }
+  | {
+      status: 'loading'
+      geojson?: GeoJSON.FeatureCollection
+      address?: { sig_cd?: number; sig_eng_nm?: string; full_nm?: string; sig_kor_nm?: string }
+    }
+  | {
+      status: 'success'
+      sigCd: string
+      geojson: GeoJSON.FeatureCollection
+      address?: { sig_cd?: number; sig_eng_nm?: string; full_nm?: string; sig_kor_nm?: string }
+    }
+  | {
+      status: 'error'
+      error: string
+      geojson?: GeoJSON.FeatureCollection
+      address?: { sig_cd?: number; sig_eng_nm?: string; full_nm?: string; sig_kor_nm?: string }
+    }
 
 // VWorld 응답에서 FeatureCollection이 들어갈 수 있는 경로들을 최대한 흡수
 function pickMaybeGeoJson(raw: any) {
@@ -99,28 +118,63 @@ export function useSigunguFromLoc(loc: Loc | null) {
               status: 'error',
               error: `GeoJSON FeatureCollection not found in response (shape: ${String(shape)})`,
             })
+            toast.error('시군구 정보를 불러오는 중 오류가 발생했습니다.')
           }
           return
         }
 
         const sigCd = extractSigCd(fc)
         if (!sigCd) {
-          if (!cancelled) setState({ status: 'error', error: 'sig_cd not found in GeoJSON properties' })
+          if (!cancelled) {
+            setState({ status: 'error', error: 'sig_cd not found in GeoJSON properties' })
+            toast.error('시군구 정보를 불러오는 중 오류가 발생했습니다.')
+          }
           return
         }
 
         // ✅ (스킵) 같은 시군구면 업데이트/리렌더 최소화
         if (lastSigCdRef.current === sigCd) {
           if (!cancelled) {
-            setState((prev) => (prev.status === 'success' ? prev : { status: 'success', sigCd, geojson: fc }))
+            setState((prev) =>
+              prev.status === 'success'
+                ? prev
+                : {
+                    status: 'success',
+                    sigCd,
+                    geojson: fc,
+                    address: {
+                      sig_cd: fc.features[0]?.properties?.sig_cd,
+                      sig_eng_nm: fc.features[0]?.properties?.sig_eng_nm,
+                      full_nm: fc.features[0]?.properties?.full_nm,
+                      sig_kor_nm: fc.features[0]?.properties?.sig_kor_nm,
+                    },
+                  },
+            )
+            toast.success(`현재 계신 동네는 ${fc.features[0]?.properties?.full_nm}입니다.`)
           }
           return
         }
         lastSigCdRef.current = sigCd
 
-        if (!cancelled) setState({ status: 'success', sigCd, geojson: fc })
+        if (!cancelled) {
+          setState({
+            status: 'success',
+            sigCd,
+            geojson: fc,
+            address: {
+              sig_cd: fc.features[0]?.properties?.sig_cd,
+              sig_eng_nm: fc.features[0]?.properties?.sig_eng_nm,
+              full_nm: fc.features[0]?.properties?.full_nm,
+              sig_kor_nm: fc.features[0]?.properties?.sig_kor_nm,
+            },
+          })
+          toast.success(`현재 계신 동네는 ${fc.features[0]?.properties?.full_nm}입니다.`)
+        }
       } catch (e: any) {
-        if (!cancelled) setState({ status: 'error', error: e?.message ?? 'Failed' })
+        if (!cancelled) {
+          setState({ status: 'error', error: e?.message || 'Failed' })
+          toast.error('시군구 정보를 불러오는 중 오류가 발생했습니다.')
+        }
       }
     }, 700) // ✅ 디바운스(ms) — watchPosition 떨림 흡수
 
