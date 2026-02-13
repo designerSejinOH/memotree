@@ -33,8 +33,8 @@ function getBoxColor(postCount: number): string {
 }
 
 function getClusterLevel(zoom: number): ClusterLevel {
-  if (zoom < 10) return 'city'
-  if (zoom < 13) return 'district'
+  if (zoom < 11) return 'city'
+  if (zoom < 14) return 'district'
   return 'post'
 }
 

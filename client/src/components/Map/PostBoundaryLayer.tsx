@@ -14,7 +14,7 @@ interface PostBoundaryLayerProps {
   stats: TreeStat[]
 }
 
-const SIDO_ZOOM_THRESHOLD = 10
+const SIDO_ZOOM_THRESHOLD = 11
 
 function toFeatureCollection(raw: any): GeoJSON.FeatureCollection | null {
   if (!raw) return null
