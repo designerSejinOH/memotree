@@ -188,10 +188,10 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
             >
               ⦿
             </motion.span>{' '}
-            {zoom < 7
+            {zoom < 10
               ? (sigungu.address.full_nm?.split(' ')[0] || '시도 정보 없음')
               : (sigungu.address.full_nm || '시군구 정보 없음')}
-            {zoom >= 7 && sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
+            {zoom >= 10 && sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
           </motion.div>
         ) : null}
       </AnimatePresence>
