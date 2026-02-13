@@ -5,3 +5,10 @@ export async function fetchSigunguByPoint(lat: number, lng: number) {
   if (!res.ok) throw new Error(json?.error ?? `Request failed (${res.status})`)
   return json
 }
+
+export async function fetchSidoByPoint(lat: number, lng: number) {
+  const res = await fetch(`/api/sigungu/by-point?lat=${lat}&lng=${lng}&level=sido`)
+  const json = await res.json().catch(() => null)
+  if (!res.ok) throw new Error(json?.error ?? `Request failed (${res.status})`)
+  return json
+}
