@@ -53,10 +53,8 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
     featureType: 'all',
     elementType: 'labels.text.fill',
     stylers: [
-      // ✅ 모든 라벨 텍스트의 “글자색”
-      { visibility: 'on' },
-      // { color: '#555555' },
-      // { lightness: 0 },     // 색을 유지하면서 밝기만 미세 조정할 때
+      // ✅ 모든 라벨 텍스트의 "글자색"
+      { visibility: 'off' },
     ],
   },
 
@@ -64,10 +62,8 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
     featureType: 'all',
     elementType: 'labels.text.stroke',
     stylers: [
-      // ✅ 모든 라벨 텍스트의 “외곽선(스트로크)” — 가독성에 큰 영향
-      { visibility: 'on' },
-      // { color: '#ffffff' },
-      // { weight: 1 }, // 외곽선 두께 (상대적)
+      // ✅ 모든 라벨 텍스트의 "외곽선(스트로크)" — 가독성에 큰 영향
+      { visibility: 'off' },
     ],
   },
 
@@ -87,28 +83,7 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
   {
     featureType: 'water',
     elementType: 'labels',
-    stylers: [
-      // ✅ 물 이름 라벨(예: Han River 등)
-      { visibility: 'on' },
-    ],
-  },
-  {
-    featureType: 'water',
-    elementType: 'labels.text.fill',
-    stylers: [
-      // ✅ 물 라벨 텍스트 색만 따로
-      { color: '#555555' },
-      { visibility: 'on' },
-    ],
-  },
-  {
-    featureType: 'water',
-    elementType: 'labels.text.stroke',
-    stylers: [
-      // ✅ 물 라벨 외곽선만 따로
-      { color: '#ffffff' },
-      { visibility: 'on' },
-    ],
+    stylers: [{ visibility: 'off' }],
   },
 
   // ─────────────────────────────────────────────────────────────
