@@ -7,6 +7,7 @@ import classNames from 'classnames'
 import { Map, Screen } from '@/components'
 import LiveLocationLayer from '@/components/Map/LiveLocationLayer'
 import TreeLayer from '@/components/Map/TreeLayer'
+import PostBoundaryLayer from '@/components/Map/PostBoundaryLayer'
 import PostModal from '@/components/PostModal'
 import { getLocationStatsWithCentroids, getAllPosts } from '@/lib/api/posts'
 import type { LocationStat, Post } from '@/types/database'
@@ -43,6 +44,7 @@ export default function Page() {
     <Screen className={classNames('')}>
       <Map defaultCenter={null} defaultZoom={15}>
         <LiveLocationLayer onLocChange={setLoc} />
+        <PostBoundaryLayer stats={stats} />
         <TreeLayer stats={stats} posts={posts} onPostClick={setSelectedPost} />
       </Map>
 

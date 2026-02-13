@@ -6,7 +6,6 @@ import { useGeolocation } from '@/hooks/useGeolocation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSigunguFromLoc } from '@/hooks/useSigunguFromLoc'
 import { useGoogleMaps } from '@/app/providers/GoogleMapsProvider'
-import { fetchSidoByPoint } from '@/lib/api/sigungu'
 
 type Tracking = false | 'observe' | 'follow'
 
@@ -21,17 +20,15 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
   const [tracking, setTracking] = useState<Tracking>('follow')
   const panLock = useRef(false)
   const [zoom, setZoom] = useState<number>(15)
-  const [sidoGeojson, setSidoGeojson] = useState<GeoJSON.FeatureCollection | null>(null)
-  const sidoCacheKeyRef = useRef<string | null>(null)
 
-  // zoom 변화 감지
+  // zoom 변화 감지 (하단 행정구역 텍스트 표시에 사용)
   useEffect(() => {
     if (!map) return
     const listener = map.addListener('zoom_changed', () => {
       setZoom(map.getZoom() ?? 15)
     })
     setZoom(map.getZoom() ?? 15)
-    return () => google.maps.event.clearListeners(map, 'zoom_changed')
+    return () => google.maps.event.removeListener(listener)
   }, [map])
 
   // 지도 드래그하면 follow 해제
@@ -81,70 +78,6 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
   }, [loc, onLocChange])
 
   const sigungu = useSigunguFromLoc(loc)
-  const dataLayerRef = useRef<google.maps.Data | null>(null)
-
-  // 시도 GeoJSON fetch — 시군구 정보가 나온 뒤 같은 시도면 재요청 안 함
-  useEffect(() => {
-    if (!loc || sigungu.status !== 'success' || !sigungu.address?.full_nm) return
-
-    const sidoNm = sigungu.address.full_nm.split(' ')[0]
-    if (sidoCacheKeyRef.current === sidoNm) return // 같은 시도면 스킵
-
-    fetchSidoByPoint(loc.lat, loc.lng)
-      .then((fc: GeoJSON.FeatureCollection) => {
-        if (fc?.type === 'FeatureCollection') {
-          sidoCacheKeyRef.current = sidoNm
-          setSidoGeojson(fc)
-        }
-      })
-      .catch((e) => console.error('시도 GeoJSON 조회 실패:', e))
-  }, [loc, sigungu.status, sigungu.address?.full_nm])
-
-  // zoom + GeoJSON 전환: zoom < 9 → 시도 경계, zoom >= 9 → 시군구 경계
-  useEffect(() => {
-    if (!map) return
-
-    // data layer 생성(1회)
-    if (!dataLayerRef.current) {
-      const layer = new google.maps.Data()
-      layer.setMap(map)
-      layer.setStyle({
-        fillOpacity: 0.08,
-        strokeOpacity: 0.35,
-        strokeWeight: 2,
-        clickable: false,
-      })
-      dataLayerRef.current = layer
-    }
-
-    const layer = dataLayerRef.current
-
-    // 줌에 따라 표시할 GeoJSON 결정
-    const geojson =
-      zoom < 9
-        ? sidoGeojson
-        : sigungu.status === 'success'
-          ? sigungu.geojson
-          : null
-
-    // 기존 폴리곤 제거
-    layer.forEach((f) => layer.remove(f))
-
-    if (!geojson) return
-
-    try {
-      layer.addGeoJson(geojson)
-    } catch (e) {
-      console.error('GeoJSON 추가 실패:', e)
-      if (geojson?.features) {
-        try {
-          layer.addGeoJson({ type: 'FeatureCollection', features: geojson.features })
-        } catch (retryError) {
-          console.error('GeoJSON 재시도 실패:', retryError)
-        }
-      }
-    }
-  }, [map, zoom, sidoGeojson, sigungu.status, sigungu.geojson])
 
   return (
     <>
@@ -226,7 +159,7 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className='absolute left-1/2 -translate-x-1/2 bottom-16 z-[1] bg-white/70 backdrop-blur-md rounded-lg overflow-hidden font-medium text-gray-700 px-3 py-2 w-fit text-sm shadow'
           >
-            시군구 정보를 불러오는 중입니다...
+            위치 정보를 불러오는 중입니다...
           </motion.div>
         ) : sigungu.status === 'error' ? (
           <motion.div
@@ -255,10 +188,10 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
             >
               ⦿
             </motion.span>{' '}
-            {zoom < 9
+            {zoom < 7
               ? (sigungu.address.full_nm?.split(' ')[0] || '시도 정보 없음')
               : (sigungu.address.full_nm || '시군구 정보 없음')}
-            {zoom >= 9 && sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
+            {zoom >= 7 && sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
           </motion.div>
         ) : null}
       </AnimatePresence>
