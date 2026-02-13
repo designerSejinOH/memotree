@@ -6,6 +6,8 @@ import { useGeolocation } from '@/hooks/useGeolocation'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useSigunguFromLoc } from '@/hooks/useSigunguFromLoc'
 import { useGoogleMaps } from '@/app/providers/GoogleMapsProvider'
+import { BiCurrentLocation } from 'react-icons/bi'
+import { IoClose } from 'react-icons/io5'
 
 type Tracking = false | 'observe' | 'follow'
 
@@ -17,11 +19,12 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
   const map = useGoogleMap()
   const { isLoaded } = useGoogleMaps()
   const { permission, loc, error, startWatch, stopWatch } = useGeolocation()
-  const [tracking, setTracking] = useState<Tracking>('follow')
+  const [tracking, setTracking] = useState<Tracking>(false)
+  const [modalDismissed, setModalDismissed] = useState(false)
   const panLock = useRef(false)
   const [zoom, setZoom] = useState<number>(15)
 
-  // zoom 변화 감지 (하단 행정구역 텍스트 표시에 사용)
+  // zoom 변화 감지
   useEffect(() => {
     if (!map) return
     const listener = map.addListener('zoom_changed', () => {
@@ -34,12 +37,14 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
   // 지도 드래그하면 follow 해제
   useEffect(() => {
     if (!map) return
-    const onDragStart = () => setTracking('observe')
+    const onDragStart = () => {
+      if (tracking === 'follow') setTracking('observe')
+    }
     map.addListener('dragstart', onDragStart)
     return () => google.maps.event.clearListeners(map, 'dragstart')
-  }, [map])
+  }, [map, tracking])
 
-  // 권한/워치 시작 (Google Maps 로딩 완료 후에만)
+  // 권한/워치 시작
   useEffect(() => {
     if (!isLoaded) return
     startWatch()
@@ -79,20 +84,59 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
 
   const sigungu = useSigunguFromLoc(loc)
 
+  // 통합 버튼 클릭 핸들러
+  const handleLocationButtonClick = () => {
+    if (!loc || !map) {
+      // 에러가 있으면 모달 다시 표시
+      if (error || permission === 'denied' || (!loc && (permission === 'prompt' || permission === 'unknown'))) {
+        setModalDismissed(false)
+      }
+      return
+    }
+
+    if (tracking === false) {
+      // 첫 클릭: 현재 위치로 이동
+      map.panTo({ lat: loc.lat, lng: loc.lng })
+      setTracking('observe')
+    } else if (tracking === 'observe') {
+      // 두 번째 클릭: 따라가기 모드 활성화
+      setTracking('follow')
+    } else {
+      // 세 번째 클릭: 비활성화
+      setTracking(false)
+    }
+  }
+
+  // 모달 표시 여부
+  const shouldShowModal =
+    !modalDismissed &&
+    ((!loc && (permission === 'prompt' || permission === 'unknown')) || permission === 'denied' || error)
+
   return (
     <>
       {/* 권한/에러 안내 */}
       <AnimatePresence>
-        {((!loc && (permission === 'prompt' || permission === 'unknown')) || permission === 'denied' || error) && (
+        {shouldShowModal && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className='absolute left-1/2 -translate-x-1/2 bottom-2 z-[1] bg-white/70 backdrop-blur-md rounded-lg overflow-hidden font-medium text-red-400 px-3 py-2 w-fit text-sm shadow'
+            className='absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2 z-[1] text-center break-keep bg-white/70 backdrop-blur-md rounded-lg overflow-hidden font-medium text-red-400 p-4 w-[80vw] max-w-lg text-sm shadow flex flex-col gap-2 items-center justify-center relative'
           >
+            <button
+              onClick={() => setModalDismissed(true)}
+              className='absolute top-2 right-2 p-1 hover:bg-white/50 rounded-full transition-colors'
+            >
+              <IoClose className='text-xl' />
+            </button>
             {!loc && (permission === 'prompt' || permission === 'unknown') && <div>위치 권한을 허용해 주세요.</div>}
-            {permission === 'denied' && <div>위치 접근이 거부되었습니다. 브라우저 설정에서 허용해 주세요.</div>}
+            {permission === 'denied' && (
+              <div>
+                위치 접근이 거부되었습니다. <br />
+                브라우저 설정에서 허용해 주세요.
+              </div>
+            )}
             {error && <div>{error}</div>}
           </motion.div>
         )}
@@ -112,13 +156,12 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
         </>
       )}
 
-      {/* 오른쪽 하단 컨트롤 버튼들 */}
+      {/* 오른쪽 하단 통합 버튼 */}
       <motion.div
         initial={{ opacity: 0, x: 20 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.1 }}
-        style={{ bottom: 16 }}
-        className='absolute right-3 z-[1] grid gap-2'
+        className='absolute right-4 bottom-6 z-[1] w-fit h-fit flex flex-col gap-2 items-center justify-center'
       >
         <motion.button
           initial={{ opacity: 0, x: 20 }}
@@ -126,75 +169,17 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
           transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.15 }}
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => {
-            if (!loc || !map) return
-            setTracking('follow')
-            map.panTo({ lat: loc.lat, lng: loc.lng })
-          }}
-          className='rounded-md backdrop-blur-md bg-white/50 px-3 py-2 text-sm shadow cursor-pointer hover:bg-white/70 transition-colors'
+          onClick={handleLocationButtonClick}
+          className={`rounded-md backdrop-blur-md bg-white/50 hover:bg-white/70 p-2 w-fit h-fit text-2xl shadow cursor-pointer transition-all `}
         >
-          현재 위치로
-        </motion.button>
-        <motion.button
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 30, delay: 0.2 }}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setTracking((t) => (t === 'follow' ? 'observe' : 'follow'))}
-          className='rounded-md backdrop-blur-md bg-white/50 px-3 py-2 text-sm shadow cursor-pointer hover:bg-white/70 transition-colors'
-        >
-          {tracking === 'follow' ? '따라가기 끄기' : '따라가기 켜기'}
+          <BiCurrentLocation
+            className={`
+          transition-all
+            ${tracking === 'follow' ? 'text-green-600' : tracking === 'observe' ? 'text-green-600 animate-pulse' : 'text-gray-600'}
+            `}
+          />
         </motion.button>
       </motion.div>
-
-      {/* 행정구역 정보 표시 (줌 레벨에 따라 시도/시군구 전환) */}
-      <AnimatePresence mode='wait'>
-        {sigungu.status === 'loading' ? (
-          <motion.div
-            key='loading'
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className='absolute left-1/2 -translate-x-1/2 bottom-16 z-[1] bg-white/70 backdrop-blur-md rounded-lg overflow-hidden font-medium text-gray-700 px-3 py-2 w-fit text-sm shadow'
-          >
-            위치 정보를 불러오는 중입니다...
-          </motion.div>
-        ) : sigungu.status === 'error' ? (
-          <motion.div
-            key='error'
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className='absolute left-1/2 -translate-x-1/2 bottom-16 z-[1] bg-white/70 backdrop-blur-md rounded-lg overflow-hidden font-medium text-red-400 px-3 py-2 w-fit text-sm shadow'
-          >
-            시군구 정보를 불러오는 중에 오류가 발생했습니다.
-          </motion.div>
-        ) : sigungu.status === 'success' && sigungu.address ? (
-          <motion.div
-            key='success'
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 40 }}
-            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-            className='absolute left-1/2 -translate-x-1/2 bottom-0 z-[1] p-4 bg-white/70 backdrop-blur-md rounded-t-2xl overflow-hidden text-lg font-medium text-gray-700 w-[90vw] max-w-lg h-fit shadow'
-          >
-            <motion.span
-              animate={{ scale: [1, 1.2, 1] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-              className='text-red-400'
-            >
-              ⦿
-            </motion.span>{' '}
-            {zoom < 11
-              ? (sigungu.address.full_nm?.split(' ')[0] || '시도 정보 없음')
-              : (sigungu.address.full_nm || '시군구 정보 없음')}
-            {zoom >= 11 && sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
     </>
   )
 }

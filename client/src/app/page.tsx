@@ -25,10 +25,7 @@ export default function Page() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [statsData, postsData] = await Promise.all([
-        getLocationStatsWithCentroids(),
-        getAllPosts(),
-      ])
+      const [statsData, postsData] = await Promise.all([getLocationStatsWithCentroids(), getAllPosts()])
       setStats(statsData)
       setPosts(postsData)
     } catch (e) {
@@ -56,20 +53,14 @@ export default function Page() {
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.93 }}
         onClick={() => setModalOpen(true)}
-        style={{ bottom: 96 }}
-        className='fixed left-1/2 -translate-x-1/2 z-[10] bg-green-500 hover:bg-green-600 text-white font-semibold text-sm px-6 py-3 rounded-full shadow-lg cursor-pointer transition-colors flex items-center gap-2'
+        className='fixed left-1/2 -translate-x-1/2 bottom-8 z-[10] bg-green-500 hover:bg-green-600 text-white font-semibold text-sm px-6 py-3 rounded-full shadow-lg cursor-pointer transition-colors flex items-center gap-2'
       >
         <span className='text-base'>🌱</span>
         나무 심기
       </motion.button>
 
       {/* 포스트 작성 모달 */}
-      <PostModal
-        open={modalOpen}
-        loc={loc}
-        onClose={() => setModalOpen(false)}
-        onPosted={fetchData}
-      />
+      <PostModal open={modalOpen} loc={loc} onClose={() => setModalOpen(false)} onPosted={fetchData} />
 
       {/* 게시물 상세 모달 */}
       <AnimatePresence>
@@ -117,9 +108,7 @@ export default function Page() {
 
               {/* 내용 */}
               <div className='px-5 py-4'>
-                <p className='text-gray-800 text-sm leading-relaxed whitespace-pre-wrap'>
-                  {selectedPost.content}
-                </p>
+                <p className='text-gray-800 text-sm leading-relaxed whitespace-pre-wrap'>{selectedPost.content}</p>
                 <p className='text-xs text-gray-400 mt-3'>
                   {new Date(selectedPost.created_at).toLocaleDateString('ko-KR', {
                     year: 'numeric',

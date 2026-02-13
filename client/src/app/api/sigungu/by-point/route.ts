@@ -13,14 +13,14 @@ export async function GET(request: Request) {
   const domain = process.env.VWORLD_DOMAIN
 
   // 디버깅: 환경변수 확인 (보안을 위해 일부만 표시)
-  console.log('[ENV] VWORLD_KEY exists:', !!key)
-  console.log('[ENV] VWORLD_KEY length:', key?.length || 0)
-  console.log('[ENV] VWORLD_KEY preview:', key ? `${key.substring(0, 10)}...` : 'undefined')
-  console.log('[ENV] VWORLD_DOMAIN:', domain || 'undefined')
-  console.log(
-    '[ENV] All env keys:',
-    Object.keys(process.env).filter((k) => k.includes('VWORLD')),
-  )
+  // console.log('[ENV] VWORLD_KEY exists:', !!key)
+  // console.log('[ENV] VWORLD_KEY length:', key?.length || 0)
+  // console.log('[ENV] VWORLD_KEY preview:', key ? `${key.substring(0, 10)}...` : 'undefined')
+  // console.log('[ENV] VWORLD_DOMAIN:', domain || 'undefined')
+  // console.log(
+  //   '[ENV] All env keys:',
+  //   Object.keys(process.env).filter((k) => k.includes('VWORLD')),
+  // )
 
   if (!key) {
     console.error('[ENV] VWORLD_KEY is missing!')
@@ -64,8 +64,8 @@ export async function GET(request: Request) {
   const raw = await res.json().catch(() => null)
 
   // 디버깅: VWorld API 응답 로깅
-  console.log('[VWorld API] Status:', res.status)
-  console.log('[VWorld API] Response:', JSON.stringify(raw, null, 2))
+  // console.log('[VWorld API] Status:', res.status)
+  // console.log('[VWorld API] Response:', JSON.stringify(raw, null, 2))
 
   if (!res.ok || !raw) {
     console.error('[VWorld API] Error - Status:', res.status, 'Raw:', raw)
