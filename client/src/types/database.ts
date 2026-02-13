@@ -33,18 +33,39 @@ export interface PostInsert {
   sig_kor_nm: string
 }
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       posts: {
         Row: Post
         Insert: PostInsert
+        Update: Partial<PostInsert>
+        Relationships: {
+          foreignKeyName: string
+          columns: string[]
+          isOneToOne: boolean
+          referencedRelation: string
+          referencedColumns: string[]
+        }[]
       }
     }
     Views: {
       location_stats: {
         Row: LocationStat
+        Relationships: {
+          foreignKeyName: string
+          columns: string[]
+          isOneToOne: boolean
+          referencedRelation: string
+          referencedColumns: string[]
+        }[]
       }
     }
+    Functions: Record<string, {
+      Args: Record<string, unknown>
+      Returns: unknown
+    }>
+    Enums: Record<string, never>
+    CompositeTypes: Record<string, never>
   }
 }

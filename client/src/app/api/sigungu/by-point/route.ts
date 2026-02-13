@@ -41,11 +41,15 @@ export async function GET(request: Request) {
     console.warn('[VWorld API] VWORLD_DOMAIN is not set. This may cause authentication failures.')
   }
 
+  // level=sido 이면 시도 경계, 기본은 시군구
+  const level = searchParams.get('level') ?? 'sigungu'
+  const dataset = level === 'sido' ? 'LT_C_ADSIDO_INFO' : 'LT_C_ADSIGG_INFO'
+
   const upstream = new URL('https://api.vworld.kr/req/data')
   upstream.searchParams.set('service', 'data')
   upstream.searchParams.set('request', 'GetFeature')
   upstream.searchParams.set('version', '2.0')
-  upstream.searchParams.set('data', 'LT_C_ADSIGG_INFO')
+  upstream.searchParams.set('data', dataset)
   upstream.searchParams.set('key', key)
   upstream.searchParams.set('format', 'json')
   upstream.searchParams.set('geomFilter', `POINT(${lng} ${lat})`)

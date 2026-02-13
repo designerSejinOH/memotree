@@ -9,12 +9,27 @@ import { useGoogleMaps } from '@/app/providers/GoogleMapsProvider'
 
 type Tracking = false | 'observe' | 'follow'
 
-export default function LiveLocationLayer() {
+interface LiveLocationLayerProps {
+  onLocChange?: (loc: import('@/hooks/useGeolocation').Loc | null) => void
+}
+
+export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProps = {}) {
   const map = useGoogleMap()
   const { isLoaded } = useGoogleMaps()
   const { permission, loc, error, startWatch, stopWatch } = useGeolocation()
   const [tracking, setTracking] = useState<Tracking>('follow')
   const panLock = useRef(false)
+  const [zoom, setZoom] = useState<number>(15)
+
+  // zoom 변화 감지 (하단 행정구역 텍스트 표시에 사용)
+  useEffect(() => {
+    if (!map) return
+    const listener = map.addListener('zoom_changed', () => {
+      setZoom(map.getZoom() ?? 15)
+    })
+    setZoom(map.getZoom() ?? 15)
+    return () => google.maps.event.removeListener(listener)
+  }, [map])
 
   // 지도 드래그하면 follow 해제
   useEffect(() => {
@@ -57,49 +72,12 @@ export default function LiveLocationLayer() {
     [],
   )
 
-  const sigungu = useSigunguFromLoc(loc)
-  const dataLayerRef = useRef<google.maps.Data | null>(null)
-
-  // geojson을 DataLayer에 반영
+  // loc 변경 시 부모에 전달
   useEffect(() => {
-    if (!map) return
+    onLocChange?.(loc)
+  }, [loc, onLocChange])
 
-    // data layer 생성(1회)
-    if (!dataLayerRef.current) {
-      const layer = new google.maps.Data()
-      layer.setMap(map)
-      layer.setStyle({
-        fillOpacity: 0.08,
-        strokeOpacity: 0.35,
-        strokeWeight: 2,
-        clickable: false,
-      })
-      dataLayerRef.current = layer
-    }
-
-    const layer = dataLayerRef.current
-
-    // 성공 상태에서만 반영
-    if (sigungu.status !== 'success') return
-    const geojson = sigungu.geojson
-
-    // 기존 폴리곤 제거 후 추가
-    layer.forEach((f) => layer.remove(f))
-
-    try {
-      layer.addGeoJson(geojson)
-    } catch (e) {
-      console.error('GeoJSON 추가 실패:', e)
-      // geojson이 features만 내려오는 형태면 감싸서 대응
-      if (geojson?.features) {
-        try {
-          layer.addGeoJson({ type: 'FeatureCollection', features: geojson.features })
-        } catch (retryError) {
-          console.error('GeoJSON 재시도 실패:', retryError)
-        }
-      }
-    }
-  }, [map, sigungu.status, sigungu.geojson])
+  const sigungu = useSigunguFromLoc(loc)
 
   return (
     <>
@@ -170,7 +148,7 @@ export default function LiveLocationLayer() {
         </motion.button>
       </motion.div>
 
-      {/* 시군구 정보 표시 */}
+      {/* 행정구역 정보 표시 (줌 레벨에 따라 시도/시군구 전환) */}
       <AnimatePresence mode='wait'>
         {sigungu.status === 'loading' ? (
           <motion.div
@@ -181,7 +159,7 @@ export default function LiveLocationLayer() {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className='absolute left-1/2 -translate-x-1/2 bottom-16 z-[1] bg-white/70 backdrop-blur-md rounded-lg overflow-hidden font-medium text-gray-700 px-3 py-2 w-fit text-sm shadow'
           >
-            시군구 정보를 불러오는 중입니다...
+            위치 정보를 불러오는 중입니다...
           </motion.div>
         ) : sigungu.status === 'error' ? (
           <motion.div
@@ -210,8 +188,10 @@ export default function LiveLocationLayer() {
             >
               ⦿
             </motion.span>{' '}
-            {sigungu.address.full_nm || '시군구 정보 없음'}
-            {sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
+            {zoom < 11
+              ? (sigungu.address.full_nm?.split(' ')[0] || '시도 정보 없음')
+              : (sigungu.address.full_nm || '시군구 정보 없음')}
+            {zoom >= 11 && sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
           </motion.div>
         ) : null}
       </AnimatePresence>

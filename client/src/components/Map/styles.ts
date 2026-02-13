@@ -32,9 +32,9 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
     featureType: 'all',
     elementType: 'labels',
     stylers: [
-      // ✅ “지도 라벨(텍스트+아이콘) 전체” 표시 여부
-      // { visibility: 'off' }, // 전부 끄기 (POI/도로명/지명 전부 사라짐)
-      { visibility: 'on' }, // 전부 켜기
+      // ✅ "지도 라벨(텍스트+아이콘) 전체" 표시 여부
+      { visibility: 'off' }, // 전부 끄기 (POI/도로명/지명 전부 사라짐)
+      // { visibility: 'on' }, // 전부 켜기
       // { visibility: 'simplified' }, // 일부 단순화 (상황에 따라 차이 큼)
     ],
   },
@@ -53,10 +53,8 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
     featureType: 'all',
     elementType: 'labels.text.fill',
     stylers: [
-      // ✅ 모든 라벨 텍스트의 “글자색”
-      { visibility: 'on' },
-      // { color: '#555555' },
-      // { lightness: 0 },     // 색을 유지하면서 밝기만 미세 조정할 때
+      // ✅ 모든 라벨 텍스트의 "글자색"
+      { visibility: 'off' },
     ],
   },
 
@@ -64,10 +62,8 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
     featureType: 'all',
     elementType: 'labels.text.stroke',
     stylers: [
-      // ✅ 모든 라벨 텍스트의 “외곽선(스트로크)” — 가독성에 큰 영향
-      { visibility: 'on' },
-      // { color: '#ffffff' },
-      // { weight: 1 }, // 외곽선 두께 (상대적)
+      // ✅ 모든 라벨 텍스트의 "외곽선(스트로크)" — 가독성에 큰 영향
+      { visibility: 'off' },
     ],
   },
 
@@ -87,28 +83,7 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
   {
     featureType: 'water',
     elementType: 'labels',
-    stylers: [
-      // ✅ 물 이름 라벨(예: Han River 등)
-      { visibility: 'on' },
-    ],
-  },
-  {
-    featureType: 'water',
-    elementType: 'labels.text.fill',
-    stylers: [
-      // ✅ 물 라벨 텍스트 색만 따로
-      { color: '#555555' },
-      { visibility: 'on' },
-    ],
-  },
-  {
-    featureType: 'water',
-    elementType: 'labels.text.stroke',
-    stylers: [
-      // ✅ 물 라벨 외곽선만 따로
-      { color: '#ffffff' },
-      { visibility: 'on' },
-    ],
+    stylers: [{ visibility: 'off' }],
   },
 
   // ─────────────────────────────────────────────────────────────
@@ -378,21 +353,21 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
   {
     featureType: 'administrative.country',
     elementType: 'labels',
-    stylers: [{ visibility: 'on' }],
+    stylers: [{ visibility: 'off' }],
   },
 
   // administrative.province: 도/광역시급 라벨
   {
     featureType: 'administrative.province',
     elementType: 'labels',
-    stylers: [{ visibility: 'on' }],
+    stylers: [{ visibility: 'off' }],
   },
 
   // administrative.locality: 시/구/지역 라벨(가장 자주 보이는 도시명 레벨)
   {
     featureType: 'administrative.locality',
     elementType: 'labels',
-    stylers: [{ visibility: 'on' }],
+    stylers: [{ visibility: 'off' }],
   },
 
   // administrative.neighborhood: 동네/구역 라벨(더 촘촘)
