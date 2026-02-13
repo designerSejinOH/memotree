@@ -378,21 +378,21 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
   {
     featureType: 'administrative.country',
     elementType: 'labels',
-    stylers: [{ visibility: 'on' }],
+    stylers: [{ visibility: 'off' }],
   },
 
   // administrative.province: 도/광역시급 라벨
   {
     featureType: 'administrative.province',
     elementType: 'labels',
-    stylers: [{ visibility: 'on' }],
+    stylers: [{ visibility: 'off' }],
   },
 
   // administrative.locality: 시/구/지역 라벨(가장 자주 보이는 도시명 레벨)
   {
     featureType: 'administrative.locality',
     elementType: 'labels',
-    stylers: [{ visibility: 'on' }],
+    stylers: [{ visibility: 'off' }],
   },
 
   // administrative.neighborhood: 동네/구역 라벨(더 촘촘)
