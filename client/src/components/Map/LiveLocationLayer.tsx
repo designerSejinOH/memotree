@@ -19,6 +19,17 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
   const { permission, loc, error, startWatch, stopWatch } = useGeolocation()
   const [tracking, setTracking] = useState<Tracking>('follow')
   const panLock = useRef(false)
+  const [zoom, setZoom] = useState<number>(15)
+
+  // zoom 변화 감지
+  useEffect(() => {
+    if (!map) return
+    const listener = map.addListener('zoom_changed', () => {
+      setZoom(map.getZoom() ?? 15)
+    })
+    setZoom(map.getZoom() ?? 15)
+    return () => google.maps.event.clearListeners(map, 'zoom_changed')
+  }, [map])
 
   // 지도 드래그하면 follow 해제
   useEffect(() => {
@@ -219,8 +230,10 @@ export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProp
             >
               ⦿
             </motion.span>{' '}
-            {sigungu.address.full_nm || '시군구 정보 없음'}
-            {sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
+            {zoom < 9
+              ? (sigungu.address.full_nm?.split(' ')[0] || '시도 정보 없음')
+              : (sigungu.address.full_nm || '시군구 정보 없음')}
+            {zoom >= 9 && sigungu.address.sig_kor_nm ? ` (${sigungu.address.sig_kor_nm})` : ''}
           </motion.div>
         ) : null}
       </AnimatePresence>

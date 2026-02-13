@@ -1,7 +1,16 @@
 // src/lib/api/posts.ts
 
 import { supabase } from '@/lib/supabase'
-import type { PostInsert, LocationStat } from '@/types/database'
+import type { Post, PostInsert, LocationStat } from '@/types/database'
+
+export async function getAllPosts(): Promise<Post[]> {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
 
 export async function createPost(post: PostInsert) {
   const { data, error } = await supabase.from('posts').insert(post).select().single()
