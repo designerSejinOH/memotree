@@ -9,7 +9,11 @@ import { useGoogleMaps } from '@/app/providers/GoogleMapsProvider'
 
 type Tracking = false | 'observe' | 'follow'
 
-export default function LiveLocationLayer() {
+interface LiveLocationLayerProps {
+  onLocChange?: (loc: import('@/hooks/useGeolocation').Loc | null) => void
+}
+
+export default function LiveLocationLayer({ onLocChange }: LiveLocationLayerProps = {}) {
   const map = useGoogleMap()
   const { isLoaded } = useGoogleMaps()
   const { permission, loc, error, startWatch, stopWatch } = useGeolocation()
@@ -56,6 +60,11 @@ export default function LiveLocationLayer() {
     }),
     [],
   )
+
+  // loc 변경 시 부모에 전달
+  useEffect(() => {
+    onLocChange?.(loc)
+  }, [loc, onLocChange])
 
   const sigungu = useSigunguFromLoc(loc)
   const dataLayerRef = useRef<google.maps.Data | null>(null)
