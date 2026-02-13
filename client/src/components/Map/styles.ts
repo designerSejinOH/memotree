@@ -32,9 +32,9 @@ export const mapStyle: google.maps.MapTypeStyle[] = [
     featureType: 'all',
     elementType: 'labels',
     stylers: [
-      // ✅ “지도 라벨(텍스트+아이콘) 전체” 표시 여부
-      // { visibility: 'off' }, // 전부 끄기 (POI/도로명/지명 전부 사라짐)
-      { visibility: 'on' }, // 전부 켜기
+      // ✅ "지도 라벨(텍스트+아이콘) 전체" 표시 여부
+      { visibility: 'off' }, // 전부 끄기 (POI/도로명/지명 전부 사라짐)
+      // { visibility: 'on' }, // 전부 켜기
       // { visibility: 'simplified' }, // 일부 단순화 (상황에 따라 차이 큼)
     ],
   },
